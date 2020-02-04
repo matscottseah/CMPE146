@@ -65,14 +65,32 @@ int main(void)
     /* Configuring P1.0 as output */
     MAP_GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0);
 
+    /* Setup counter */
+    MAP_Timer32_initModule(TIMER32_0_BASE,
+                           TIMER32_PRESCALER_1,
+                           TIMER32_32BIT,
+                           TIMER32_FREE_RUN_MODE);
+
+    uint32_t frequency = MAP_CS_getMCLK();
+    printf("\nFrequency: %u\n", frequency);
+
+    /* Start timer */
+    MAP_Timer32_startTimer(TIMER32_0_BASE, 0);
+
+    uint32_t t0;
+    uint32_t t1;
+
     while (1)
     {
-        /* Delay Loop */
-        for(ii=0;ii<50000;ii++)
-        {
-        }
+        t0 = MAP_Timer32_getValue(TIMER32_0_BASE);
 
+        /* Delay Loop */
+        for (ii=0; ii<500000; ii++) { }
         MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P1, GPIO_PIN0);
+
+        t1 = MAP_Timer32_getValue(TIMER32_0_BASE);
+
+        printf("Time in milliseconds: %u\n", ((t0-t1)/frequency)*1000);
     }
 }
 //![Simple GPIO Config]
