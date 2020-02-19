@@ -56,7 +56,7 @@
 #define CRC32_POLY              0xEDB88320
 #define CRC32_INIT              0xFFFFFFFF
 
-static uint8_t myData[10] = {0};
+static uint8_t myData[1024] = {0};
 static uint32_t calculateCRC32(uint8_t* data, uint32_t length);
 
 volatile uint32_t hwCalculatedCRC, swCalculatedCRC;
@@ -110,16 +110,53 @@ uint32_t compute_simple_checksum(const uint8_t *data, const uint32_t length) {
     return reversedBits(sum);
 }
 
+//  Exercise 1.3
+void startTimer() {
+    /* Setup counter */
+    MAP_Timer32_initModule(TIMER32_0_BASE,
+                           TIMER32_PRESCALER_1,
+                           TIMER32_32BIT,
+                           TIMER32_FREE_RUN_MODE);
+
+    MAP_Timer32_startTimer(TIMER32_0_BASE, 0);
+}
+
+uint32_t getTimerValue() {
+    return MAP_Timer32_getValue(TIMER32_0_BASE);
+}
+
+uint32_t computeElapsedTimeInMicroseconds(const uint32_t t0, const uint32_t t1) {
+    float clockFrequency = MAP_CS_getMCLK();
+    float elapsedTime = t0 - t1;
+    float elapsedTimeInMicroseconds = (elapsedTime/clockFrequency) * 1000000;
+
+    return elapsedTimeInMicroseconds;
+}
+
 //![Simple CRC32 Example] 
 int main(void)
 {
+    startTimer();
+
     int lengthOfMyData = sizeof(myData);
 
     //  Exercise 1.1
     initRandomArray((uint8_t*)myData, lengthOfMyData);
 
+    //  --------------------------------------------------------------------------
+
+    uint32_t simpleChecksum_t0 = getTimerValue();
+
     //  Exercise 1.2
-    uint32_t checksum = compute_simple_checksum((uint8_t*)myData, lengthOfMyData);
+    uint32_t simpleChecksum = compute_simple_checksum((uint8_t*)myData, lengthOfMyData);
+
+    uint32_t simpleChecksum_t1 = getTimerValue();
+
+    //  Exercise 1.3
+    uint32_t simpleChecksumElapsedTime = computeElapsedTimeInMicroseconds(simpleChecksum_t0, simpleChecksum_t1);
+    printf("\nSimple Checksum: %u\nElapsed Time: %u us\n", simpleChecksum, simpleChecksumElapsedTime);
+
+    //  --------------------------------------------------------------------------
 
     uint32_t ii;
 
@@ -131,11 +168,32 @@ int main(void)
     for (ii = 0; ii < lengthOfMyData; ii++)
         MAP_CRC32_set8BitData(myData[ii], CRC32_MODE);
 
+    uint32_t hwChecksum_t0 = getTimerValue();
+
     /* Getting the result from the hardware module */
     hwCalculatedCRC = MAP_CRC32_getResultReversed(CRC32_MODE) ^ 0xFFFFFFFF;
 
+    uint32_t hwChecksum_t1 = getTimerValue();
+
+    //  Exercise 1.3
+    uint32_t hwChecksumElapsedTime = computeElapsedTimeInMicroseconds(hwChecksum_t0, hwChecksum_t1);
+    printf("\nHardware Checksum: %u\nElapsed Time: %u us\n", hwCalculatedCRC, hwChecksumElapsedTime);
+
+    //  --------------------------------------------------------------------------
+
+    uint32_t swChecksum_t0 = getTimerValue();
+
     /* Calculating the CRC32 checksum through software */
     swCalculatedCRC = calculateCRC32((uint8_t*)myData, lengthOfMyData);
+
+    uint32_t swChecksum_t1 = getTimerValue();
+
+    //  Exercise 1.3
+    uint32_t swChecksumElapsedTime = computeElapsedTimeInMicroseconds(swChecksum_t0, swChecksum_t1);
+    printf("\nSoftware Checksum: %u\nElapsed Time: %u us\n", swCalculatedCRC, swChecksumElapsedTime);
+
+    uint32_t speedup = swChecksumElapsedTime - hwChecksumElapsedTime;
+    printf("\nSpeedup: %u us", speedup);
 
     /* Pause for the debugger */
     __no_operation();
