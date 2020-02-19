@@ -140,19 +140,19 @@ int main(void)
 
     int lengthOfMyData = sizeof(myData);
 
-    //  Exercise 1.1
+    //  Exercise 1.1  ------------------------------------------------------------
+
     initRandomArray((uint8_t*)myData, lengthOfMyData);
 
-    //  --------------------------------------------------------------------------
+    //  Exercise 1.2  ------------------------------------------------------------
 
     uint32_t simpleChecksum_t0 = getTimerValue();
 
-    //  Exercise 1.2
     uint32_t simpleChecksum = compute_simple_checksum((uint8_t*)myData, lengthOfMyData);
 
     uint32_t simpleChecksum_t1 = getTimerValue();
 
-    //  Exercise 1.3
+    //  Exercise 1.3  ------------------------------------------------------------
     uint32_t simpleChecksumElapsedTime = computeElapsedTimeInMicroseconds(simpleChecksum_t0, simpleChecksum_t1);
     printf("\nSimple Checksum: %u\nElapsed Time: %u us\n", simpleChecksum, simpleChecksumElapsedTime);
 
@@ -175,7 +175,7 @@ int main(void)
 
     uint32_t hwChecksum_t1 = getTimerValue();
 
-    //  Exercise 1.3
+    //  Exercise 1.3  ------------------------------------------------------------
     uint32_t hwChecksumElapsedTime = computeElapsedTimeInMicroseconds(hwChecksum_t0, hwChecksum_t1);
     printf("\nHardware Checksum: %u\nElapsed Time: %u us\n", hwCalculatedCRC, hwChecksumElapsedTime);
 
@@ -188,12 +188,68 @@ int main(void)
 
     uint32_t swChecksum_t1 = getTimerValue();
 
-    //  Exercise 1.3
+    //  Exercise 1.3  ------------------------------------------------------------
     uint32_t swChecksumElapsedTime = computeElapsedTimeInMicroseconds(swChecksum_t0, swChecksum_t1);
     printf("\nSoftware Checksum: %u\nElapsed Time: %u us\n", swCalculatedCRC, swChecksumElapsedTime);
-
     uint32_t speedup = swChecksumElapsedTime - hwChecksumElapsedTime;
-    printf("\nSpeedup: %u us", speedup);
+    printf("\nSpeedup: %u us\n", speedup);
+
+    //  Exercise 1.4  ------------------------------------------------------------
+    myData[20] = reversedBits(myData[20]);
+    printf("\nReverse myData[20]:");
+
+    for (ii = 0; ii < lengthOfMyData; ii++)
+            MAP_CRC32_set8BitData(myData[ii], CRC32_MODE);
+
+    hwChecksum_t0 = getTimerValue();
+
+    /* Getting the result from the hardware module */
+    hwCalculatedCRC = MAP_CRC32_getResultReversed(CRC32_MODE) ^ 0xFFFFFFFF;
+
+    hwChecksum_t1 = getTimerValue();
+
+    hwChecksumElapsedTime = computeElapsedTimeInMicroseconds(hwChecksum_t0, hwChecksum_t1);
+    printf("\nHardware Checksum: %u\nElapsed Time: %u us\n", hwCalculatedCRC, hwChecksumElapsedTime);
+
+    //  --------------------------------------------------------------------------
+
+    simpleChecksum_t0 = getTimerValue();
+
+    simpleChecksum = compute_simple_checksum((uint8_t*)myData, lengthOfMyData);
+
+    simpleChecksum_t1 = getTimerValue();
+
+    simpleChecksumElapsedTime = computeElapsedTimeInMicroseconds(simpleChecksum_t0, simpleChecksum_t1);
+    printf("\nSimple Checksum: %u\nElapsed Time: %u us\n", simpleChecksum, simpleChecksumElapsedTime);
+
+    //  --------------------------------------------------------------------------
+
+    myData[21] = reversedBits(myData[21]);
+    printf("\nReverse myData[21]:");
+
+    for (ii = 0; ii < lengthOfMyData; ii++)
+            MAP_CRC32_set8BitData(myData[ii], CRC32_MODE);
+
+    hwChecksum_t0 = getTimerValue();
+
+    /* Getting the result from the hardware module */
+    hwCalculatedCRC = MAP_CRC32_getResultReversed(CRC32_MODE) ^ 0xFFFFFFFF;
+
+    hwChecksum_t1 = getTimerValue();
+
+    hwChecksumElapsedTime = computeElapsedTimeInMicroseconds(hwChecksum_t0, hwChecksum_t1);
+    printf("\nHardware Checksum: %u\nElapsed Time: %u us\n", hwCalculatedCRC, hwChecksumElapsedTime);
+
+    //  --------------------------------------------------------------------------
+
+    simpleChecksum_t0 = getTimerValue();
+
+    simpleChecksum = compute_simple_checksum((uint8_t*)myData, lengthOfMyData);
+
+    simpleChecksum_t1 = getTimerValue();
+
+    simpleChecksumElapsedTime = computeElapsedTimeInMicroseconds(simpleChecksum_t0, simpleChecksum_t1);
+    printf("\nSimple Checksum: %u\nElapsed Time: %u us\n", simpleChecksum, simpleChecksumElapsedTime);
 
     /* Pause for the debugger */
     __no_operation();
