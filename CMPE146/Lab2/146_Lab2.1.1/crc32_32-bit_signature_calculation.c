@@ -51,19 +51,76 @@
  *
  ******************************************************************************/
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
+#include <stdlib.h>
 
 #define CRC32_POLY              0xEDB88320
 #define CRC32_INIT              0xFFFFFFFF
 
-static const uint8_t myData[9] =
-{ 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 };
+static uint8_t myData[10] = {0};
 static uint32_t calculateCRC32(uint8_t* data, uint32_t length);
 
 volatile uint32_t hwCalculatedCRC, swCalculatedCRC;
 
+//  Exercise 1.1
+void initRandomArray(uint8_t *buffer, const int length) {
+    int i;
+    bool odd = true;
+
+    for (i = 0; i < length; i++) {
+        int randomNumber = rand();
+
+        if (odd && (randomNumber%2 != 1)) {
+            while (randomNumber%2 != 1) {
+                randomNumber = rand();
+            }
+        } else if (!odd && (randomNumber%2 != 0)) {
+            while (randomNumber%2 != 0) {
+                randomNumber = rand();
+            }
+        }
+
+        buffer[i] = randomNumber;
+        odd = !odd;
+    }
+}
+
+//  Exercise 1.2
+uint32_t reversedBits(uint32_t num) {
+    uint32_t bitCount = sizeof(num) * 8;
+    uint32_t reversedNumber = 0;
+    uint32_t i;
+    uint32_t temp;
+
+    for (i = 0; i < bitCount; i++) {
+        temp = (num & (1 << i));
+        if (temp) reversedNumber |= (1 << ((bitCount - 1) - i));
+    }
+
+    return reversedNumber;
+}
+
+uint32_t compute_simple_checksum(const uint8_t *data, const uint32_t length) {
+    uint32_t sum = 0;
+    int i;
+
+    for (i = 0; i < length; i++) {
+        sum += data[i];
+    }
+
+    return reversedBits(sum);
+}
+
 //![Simple CRC32 Example] 
 int main(void)
 {
+    int lengthOfMyData = sizeof(myData);
+
+    //  Exercise 1.1
+    initRandomArray((uint8_t*)myData, lengthOfMyData);
+
+    //  Exercise 1.2
+    uint32_t checksum = compute_simple_checksum((uint8_t*)myData, lengthOfMyData);
+
     uint32_t ii;
 
     /* Stop WDT */
@@ -71,14 +128,14 @@ int main(void)
 
     MAP_CRC32_setSeed(CRC32_INIT, CRC32_MODE);
 
-    for (ii = 0; ii < 9; ii++)
+    for (ii = 0; ii < lengthOfMyData; ii++)
         MAP_CRC32_set8BitData(myData[ii], CRC32_MODE);
 
     /* Getting the result from the hardware module */
     hwCalculatedCRC = MAP_CRC32_getResultReversed(CRC32_MODE) ^ 0xFFFFFFFF;
 
     /* Calculating the CRC32 checksum through software */
-    swCalculatedCRC = calculateCRC32((uint8_t*) myData, 9);
+    swCalculatedCRC = calculateCRC32((uint8_t*)myData, lengthOfMyData);
 
     /* Pause for the debugger */
     __no_operation();
