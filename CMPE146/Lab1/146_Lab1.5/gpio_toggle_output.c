@@ -85,7 +85,7 @@ int main(void)
         t0 = MAP_Timer32_getValue(TIMER32_0_BASE);
 
         /* Delay Loop */
-        for (ii=0; ii<5000000; ii++) { }
+        for (ii=0; ii<1000000; ii++) { }
         MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P1, GPIO_PIN0);
 
         t1 = MAP_Timer32_getValue(TIMER32_0_BASE);

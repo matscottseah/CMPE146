@@ -69,31 +69,49 @@ static uint8_t CipherKey[32] =
 static uint8_t DataAESencrypted[16];       // Encrypted data
 static uint8_t DataAESdecrypted[16];       // Decrypted data
 
+void encrypt_message_16(char* str, uint8_t* encrypted, uint8_t* key) {
+    printf("\nOriginal Text Message: %s", str);
+
+    //  Convert char* to uint8_t array
+    uint8_t data[16];
+
+    int i;
+    for (i = 0; i < 16; i++) {
+        data[i] = (uint8_t)(str[i]);
+    }
+
+    /* Load a cipher key to module */
+    MAP_AES256_setCipherKey(AES256_BASE, key, AES256_KEYLENGTH_256BIT);
+
+    /* Encrypt data with preloaded cipher key */
+    MAP_AES256_encryptData(AES256_BASE, data, encrypted);
+
+    printf("\nEncrypted Text Message: ");
+    for (i = 0; i < 16; i++) {
+        printf("0x%02X ", DataAESencrypted[i]);
+    }
+}
+
+void decrypt_message_16(uint8_t* data, uint8_t* decrypted, uint8_t* key) {
+    /* Load a decipher key to module */
+    MAP_AES256_setDecipherKey(AES256_BASE, key, AES256_KEYLENGTH_256BIT);
+
+    /* Decrypt data with keys that were generated during encryption*/
+    MAP_AES256_decryptData(AES256_BASE, data, decrypted);
+
+    int i;
+    printf("\nDecrypted Text Message: ");
+    for (i = 0; i < 16; i++) {
+        printf("%c", (char)(DataAESdecrypted[i]));
+    }
+}
 
 int main(void)
 {
     /* Stop Watchdog  */
     MAP_WDT_A_holdTimer();
 
-    //![Simple AES256 Example]
-    /* Load a cipher key to module */
-    MAP_AES256_setCipherKey(AES256_BASE, CipherKey, AES256_KEYLENGTH_256BIT);
+    encrypt_message_16("0123456789ABCDE", DataAESencrypted, CipherKey);
 
-    /* Encrypt data with preloaded cipher key */
-    MAP_AES256_encryptData(AES256_BASE, Data, DataAESencrypted);
-
-    /* Load a decipher key to module */
-    MAP_AES256_setDecipherKey(AES256_BASE, CipherKey,AES256_KEYLENGTH_256BIT);
-
-    /* Decrypt data with keys that were generated during encryption - takes
-     214 MCLK cyles. This function will generate all round keys needed for
-     decryption first and then the encryption process starts */
-    MAP_AES256_decryptData(AES256_BASE, DataAESencrypted, DataAESdecrypted);
-    //![Simple AES256 Example]
-    
-    /* Array DataAESdecrypted should now contain the same data as array Data */
-    while(1)
-    {
-        MAP_PCM_gotoLPM0();
-    }
+    decrypt_message_16(DataAESencrypted, DataAESdecrypted, CipherKey);
 }

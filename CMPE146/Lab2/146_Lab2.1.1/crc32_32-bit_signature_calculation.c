@@ -85,20 +85,6 @@ void initRandomArray(uint8_t *buffer, const int length) {
 }
 
 //  Exercise 1.2
-uint32_t reversedBits(uint32_t num) {
-    uint32_t bitCount = sizeof(num) * 8;
-    uint32_t reversedNumber = 0;
-    uint32_t i;
-    uint32_t temp;
-
-    for (i = 0; i < bitCount; i++) {
-        temp = (num & (1 << i));
-        if (temp) reversedNumber |= (1 << ((bitCount - 1) - i));
-    }
-
-    return reversedNumber;
-}
-
 uint32_t compute_simple_checksum(const uint8_t *data, const uint32_t length) {
     uint32_t sum = 0;
     int i;
@@ -107,7 +93,7 @@ uint32_t compute_simple_checksum(const uint8_t *data, const uint32_t length) {
         sum += data[i];
     }
 
-    return reversedBits(sum);
+    return ~sum;
 }
 
 //  Exercise 1.3
@@ -195,7 +181,7 @@ int main(void)
     printf("\nSpeedup: %u us\n", speedup);
 
     //  Exercise 1.4  ------------------------------------------------------------
-    myData[20] = reversedBits(myData[20]);
+    myData[20] = ~(myData[20]);
     printf("\nReverse myData[20]:");
 
     for (ii = 0; ii < lengthOfMyData; ii++)
@@ -224,7 +210,7 @@ int main(void)
 
     //  --------------------------------------------------------------------------
 
-    myData[21] = reversedBits(myData[21]);
+    myData[21] = ~(myData[21]);
     printf("\nReverse myData[21]:");
 
     for (ii = 0; ii < lengthOfMyData; ii++)
