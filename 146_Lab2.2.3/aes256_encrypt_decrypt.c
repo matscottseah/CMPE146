@@ -67,57 +67,95 @@ static uint8_t CipherKey[32] =
 { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
         0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
         0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f };
-static uint8_t DataAESencrypted[16];       // Encrypted data
-static uint8_t DataAESdecrypted[16];       // Decrypted data
+static uint8_t DataAESencrypted[1600];       // Encrypted data
+static uint8_t DataAESdecrypted[1600];       // Decrypted data
 
-void encrypt_message_16(char* str, uint8_t* encrypted, uint8_t* key) {
-    //  Convert char* to uint8_t array
-    uint8_t data[16];
-    int length = strlen(str);
-
-    int i;
-    for (i = 0; i < length; i++) {
-        data[i] = (uint8_t)(str[i]);
-    }
-
+void encrypt_message(char* str, uint8_t* encrypted, uint8_t* key) {
     /* Load a cipher key to module */
     MAP_AES256_setCipherKey(AES256_BASE, key, AES256_KEYLENGTH_256BIT);
 
-    /* Encrypt data with preloaded cipher key */
-    MAP_AES256_encryptData(AES256_BASE, data, encrypted);
-}
-
-void decrypt_message_16(uint8_t* data, uint8_t* decrypted, uint8_t* key) {
-    /* Load a decipher key to module */
-    MAP_AES256_setDecipherKey(AES256_BASE, key, AES256_KEYLENGTH_256BIT);
-
-    /* Decrypt data with keys that were generated during encryption*/
-    MAP_AES256_decryptData(AES256_BASE, data, decrypted);
-}
-
-int main(void)
-{
-    /* Stop Watchdog  */
-    MAP_WDT_A_holdTimer();
-
-    char* str = "Matthew";
-
-    encrypt_message_16(str, DataAESencrypted, CipherKey);
-
-    decrypt_message_16(DataAESencrypted, DataAESdecrypted, CipherKey);
+    int stringLength = strlen(str);
+    int numberOfGroups = (stringLength%16 == 0) ? (stringLength/16) : (stringLength/16) + 1;
 
     int i;
-    int length = strlen(str);
+    for (i = 0; i < numberOfGroups; i++) {
+        int startIndex = 16 * i;
+        int endIndex = startIndex + 16;
 
-    printf("\nOriginal Text Message: %s", str);
+        static uint8_t tempData[16];
+        int k = 0;
+        int j;
+        for (j = startIndex; j < endIndex; j++) {
+            tempData[k] = (uint8_t)(str[j]);
+            k++;
+        }
 
-    printf("\nEncrypted Text Message: ");
-    for (i = 0; i < length; i++) {
+        static uint8_t tempEncrypted[16];
+        /* Encrypt data with preloaded cipher key */
+        MAP_AES256_encryptData(AES256_BASE, tempData, tempEncrypted);
+
+        k = 0;
+        for (j = startIndex; j < endIndex; j++) {
+            DataAESencrypted[j] = tempEncrypted[k];
+            k++;
+        }
+    }
+}
+
+void decrypt_message(uint8_t* data, int data_length, uint8_t* decrypted, uint8_t* key) {
+    /* Load a decipher key to module */
+    MAP_AES256_setDecipherKey(AES256_BASE, CipherKey,AES256_KEYLENGTH_256BIT);
+
+    int numberOfGroups = (data_length%16 == 0) ? (data_length/16) : (data_length/16) + 1;
+
+    int i;
+    for (i = 0; i < numberOfGroups; i++) {
+        int startIndex = 16 * i;
+        int endIndex = startIndex + 16;
+
+        static uint8_t tempData[16];
+        int k = 0;
+        int j;
+        for (j = startIndex; j < endIndex; j++) {
+            tempData[k] = data[j];
+            k++;
+        }
+
+        static uint8_t tempDecrypted[16];
+        /* Decrypt data with keys that were generated during encryption*/
+        MAP_AES256_decryptData(AES256_BASE, tempData, tempDecrypted);
+
+        k = 0;
+        for (j = startIndex; j < endIndex; j++) {
+            DataAESdecrypted[j] = tempDecrypted[k];
+            k++;
+        }
+    }
+}
+
+int main(void) {
+    /* Stop Watchdog  */
+    MAP_WDT_A_holdTimer();
+    
+    int i;
+    char* message = "How much wood could a wood chuck chuck if a wood chuck could chuck wood?";
+
+    encrypt_message(message, DataAESencrypted, CipherKey);
+
+    decrypt_message(DataAESencrypted, strlen(message), DataAESdecrypted, CipherKey);
+
+    printf("\nOriginal Message: %s", message);
+
+    printf("\n\nEncrypted Message: ");
+    for (i = 0; i < strlen(message); i++) {
+        if (i%32 == 0) {
+            printf("\n");
+        }
         printf("0x%02X ", DataAESencrypted[i]);
     }
 
-    printf("\nDecrypted Text Message: ");
-    for (i = 0; i < length; i++) {
+    printf("\n\nDecrypted Message: ");
+    for (i = 0; i < strlen(message); i++) {
         printf("%c", (char)(DataAESdecrypted[i]));
     }
 }

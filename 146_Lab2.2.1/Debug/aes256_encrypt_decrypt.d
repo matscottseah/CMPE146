@@ -50,9 +50,6 @@ aes256_encrypt_decrypt.obj: /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_
 aes256_encrypt_decrypt.obj: /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_01_02/source/ti/devices/msp432p4xx/driverlib/wdt_a.h
 aes256_encrypt_decrypt.obj: /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_01_02/source/ti/devices/msp432p4xx/driverlib/sysctl.h
 aes256_encrypt_decrypt.obj: /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_01_02/source/ti/devices/msp432p4xx/driverlib/flash.h
-aes256_encrypt_decrypt.obj: /Applications/ti/ccs930/ccs/tools/compiler/ti-cgt-arm_18.12.4.LTS/include/string.h
-aes256_encrypt_decrypt.obj: /Applications/ti/ccs930/ccs/tools/compiler/ti-cgt-arm_18.12.4.LTS/include/_ti_config.h
-aes256_encrypt_decrypt.obj: /Applications/ti/ccs930/ccs/tools/compiler/ti-cgt-arm_18.12.4.LTS/include/linkage.h
 
 ../aes256_encrypt_decrypt.c: 
 /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_01_02/source/ti/devices/msp432p4xx/driverlib/driverlib.h: 
@@ -104,6 +101,3 @@ aes256_encrypt_decrypt.obj: /Applications/ti/ccs930/ccs/tools/compiler/ti-cgt-ar
 /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_01_02/source/ti/devices/msp432p4xx/driverlib/wdt_a.h: 
 /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_01_02/source/ti/devices/msp432p4xx/driverlib/sysctl.h: 
 /Users/matthewscott/ti/simplelink_msp432p4_sdk_3_40_01_02/source/ti/devices/msp432p4xx/driverlib/flash.h: 
-/Applications/ti/ccs930/ccs/tools/compiler/ti-cgt-arm_18.12.4.LTS/include/string.h: 
-/Applications/ti/ccs930/ccs/tools/compiler/ti-cgt-arm_18.12.4.LTS/include/_ti_config.h: 
-/Applications/ti/ccs930/ccs/tools/compiler/ti-cgt-arm_18.12.4.LTS/include/linkage.h: 

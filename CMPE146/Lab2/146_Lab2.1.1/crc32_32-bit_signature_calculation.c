@@ -70,13 +70,9 @@ void initRandomArray(uint8_t *buffer, const int length) {
         int randomNumber = rand();
 
         if (odd && (randomNumber%2 != 1)) {
-            while (randomNumber%2 != 1) {
-                randomNumber = rand();
-            }
+            randomNumber--;
         } else if (!odd && (randomNumber%2 != 0)) {
-            while (randomNumber%2 != 0) {
-                randomNumber = rand();
-            }
+            randomNumber--;
         }
 
         buffer[i] = randomNumber;
@@ -181,7 +177,7 @@ int main(void)
     printf("\nSpeedup: %u us\n", speedup);
 
     //  Exercise 1.4  ------------------------------------------------------------
-    myData[20] = ~(myData[20]);
+    myData[20] = myData[20] ^ 1;
     printf("\nReverse myData[20]:");
 
     for (ii = 0; ii < lengthOfMyData; ii++)
@@ -210,7 +206,7 @@ int main(void)
 
     //  --------------------------------------------------------------------------
 
-    myData[21] = ~(myData[21]);
+    myData[21] = myData[21] ^ 1;
     printf("\nReverse myData[21]:");
 
     for (ii = 0; ii < lengthOfMyData; ii++)
