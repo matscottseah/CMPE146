@@ -57,7 +57,6 @@
 
 /* Standard Includes */
 #include <stdint.h>
-#include <stdio.h>
 
 #include <string.h>
 #include <stdbool.h>
@@ -79,9 +78,10 @@ __align(1024)
 #endif
 uint8_t controlTable[1024];
 
-uint8_t data_array[1024];
+uint8_t data_array[10240];
 
-int size_array[] = {64, 128, 256, 786, 1024};
+int size;
+int size_array[] = {512, 1024, 1030, 1824, 2048, 2049, 2303, 10240};
 volatile int dma_done;
 
 void startTimer() {
@@ -123,13 +123,12 @@ int main(void)
     MAP_Interrupt_enableMaster();
 
     /* Setting Control Indexes. In this case we will set the source of the
-     * DMA transfer to our random data array and the destination to the
-     * CRC32 data in register address*/
+             * DMA transfer to our random data array and the destination to the
+             * CRC32 data in register address*/
     MAP_DMA_setChannelControl(UDMA_PRI_SELECT,
                               UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1024);
 
     int i;
-    int size;
     for (i = 0; i < sizeof(size_array)/sizeof(size_array[0]); i++) {
         size = size_array[i];
         printf("\nBlock Size: %i\n", size);
@@ -155,11 +154,12 @@ int main(void)
 
         //  DMA
 
+        int transferSize = size > 1024 ? 1024 : size;
         MAP_DMA_setChannelTransfer(UDMA_PRI_SELECT,
                                    UDMA_MODE_AUTO,
                                    data_array,
                                    (void*) (&CRC32->DI32),
-                                   size);
+                                   transferSize);
 
         uint32_t dma_t0 = getTimerValue();
 
@@ -187,7 +187,7 @@ int main(void)
         printf("\nHardware CRC Elapsed Time: %u us\n", hw_elapsedTime);
         printf("DMA CRC Elapsed Time: %u us\n", dma_elapsedTime);
 
-        float dmaSpeedup = (float)hw_elapsedTime/(float)dma_elapsedTime;
+        uint32_t dmaSpeedup = (float)hw_elapsedTime/(float)dma_elapsedTime;
         printf("\nSpeedup: %f times faster\n", dmaSpeedup);
         printf("\n--------------------------------------\n");
     }
@@ -197,5 +197,35 @@ int main(void)
 void DMA_INT1_IRQHandler(void)
 {
     MAP_DMA_disableChannel(0);
-    dma_done = 1;
+    size -= 1024;
+
+    if (size > 1024) {
+        MAP_DMA_setChannelTransfer(UDMA_PRI_SELECT,
+                                   UDMA_MODE_AUTO,
+                                   data_array,
+                                   (void*) (&CRC32->DI32),
+                                   1024);
+
+        /* Enabling DMA Channel 0 */
+        MAP_DMA_enableChannel(0);
+
+        /* Forcing a software transfer on DMA Channel 0 */
+        MAP_DMA_requestSoftwareTransfer(0);
+
+    } else if (size > 0) {
+        MAP_DMA_setChannelTransfer(UDMA_PRI_SELECT,
+                                   UDMA_MODE_AUTO,
+                                   data_array,
+                                   (void*) (&CRC32->DI32),
+                                   size);
+
+        /* Enabling DMA Channel 0 */
+        MAP_DMA_enableChannel(0);
+
+        /* Forcing a software transfer on DMA Channel 0 */
+        MAP_DMA_requestSoftwareTransfer(0);
+
+    } else {
+        dma_done = 1;
+    }
 }
