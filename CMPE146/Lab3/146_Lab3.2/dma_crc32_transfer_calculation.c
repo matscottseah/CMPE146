@@ -57,9 +57,12 @@
 
 /* Standard Includes */
 #include <stdint.h>
+#include <stdio.h>
 
 #include <string.h>
 #include <stdbool.h>
+
+#define CRC32_SEED              0xFFFFFFFF
 
 /* Statics */
 static volatile uint32_t crcSignature;
@@ -78,53 +81,114 @@ uint8_t controlTable[1024];
 
 uint8_t data_array[1024];
 
+int size_array[] = {64, 128, 256, 786, 1024};
+volatile int dma_done;
+
+void startTimer() {
+    /* Setup counter */
+    MAP_Timer32_initModule(TIMER32_0_BASE,
+                           TIMER32_PRESCALER_1,
+                           TIMER32_32BIT,
+                           TIMER32_FREE_RUN_MODE);
+
+    MAP_Timer32_startTimer(TIMER32_0_BASE, 0);
+}
+
+uint32_t getTimerValue() {
+    return MAP_Timer32_getValue(TIMER32_0_BASE);
+}
+
+uint32_t computeElapsedTimeInMicroseconds(const uint32_t t0, const uint32_t t1) {
+    float clockFrequency = MAP_CS_getMCLK();
+    float elapsedTime = t0 - t1;
+    float elapsedTimeInMicroseconds = (elapsedTime/clockFrequency) * 1000000;
+
+    return elapsedTimeInMicroseconds;
+}
+
 int main(void)
 {
     /* Halting Watchdog */
     MAP_WDT_A_holdTimer();
 
-    //  Hardware Method
-
-    MAP_CRC32_setSeed(CRC32_SEED, CRC32_MODE);
-
-    int ii;
-    for (ii = 0; ii < sizeof(data_array); ii++) {
-        MAP_CRC32_set8BitData(data_array[ii], CRC32_MODE);
-    }
-    uint32_t hwCRC = MAP_CRC32_getResult(CRC32_MODE);
-    printf("\nhwCRC = %08x\n", hwCRC);
-
-    //  DMA
+    startTimer();
 
     /* Configuring DMA module */
     MAP_DMA_enableModule();
     MAP_DMA_setControlBase(controlTable);
 
-    /* Setting Control Indexes. In this case we will set the source of the
-     * DMA transfer to our random data array and the destination to the
-     * CRC32 data in register address*/
-    MAP_DMA_setChannelControl(UDMA_PRI_SELECT,
-            UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1024);
-    MAP_DMA_setChannelTransfer(UDMA_PRI_SELECT,
-            UDMA_MODE_AUTO, data_array,
-            (void*) (&CRC32->DI32), 1024);
-
     /* Assigning/Enabling Interrupts */
     MAP_DMA_assignInterrupt(DMA_INT1, 0);
     MAP_Interrupt_enableInterrupt(INT_DMA_INT1);
     MAP_Interrupt_enableMaster();
-    
-    /* Enabling DMA Channel 0 */
-    MAP_DMA_enableChannel(0);
 
-    MAP_CRC32_setSeed(CRC32_SEED, CRC32_MODE);
+    int i;
+    int size;
+    for (i = 0; i < sizeof(size_array)/sizeof(size_array[0]); i++) {
+        size = size_array[i];
+        printf("\nBlock Size: %i\n", size);
 
-    /* Forcing a software transfer on DMA Channel 0 */
-    MAP_DMA_requestSoftwareTransfer(0);
+        //  HARDWARE
 
-    while(1)
-    {
-        MAP_PCM_gotoLPM0();
+        uint32_t hw_t0 = getTimerValue();
+
+        MAP_CRC32_setSeed(CRC32_SEED, CRC32_MODE);
+
+        int j;
+        for (j = 0; j < size; j++) {
+            MAP_CRC32_set8BitData(data_array[j], CRC32_MODE);
+        }
+        uint32_t hwCRC = MAP_CRC32_getResult(CRC32_MODE);
+
+        uint32_t hw_t1 = getTimerValue();
+        uint32_t hw_elapsedTime = computeElapsedTimeInMicroseconds(hw_t0, hw_t1);
+
+        printf("\nhwCRC = %08x\n", hwCRC);
+
+        //  END HARDWARE
+
+        //  DMA
+
+        /* Setting Control Indexes. In this case we will set the source of the
+         * DMA transfer to our random data array and the destination to the
+         * CRC32 data in register address*/
+        MAP_DMA_setChannelControl(UDMA_PRI_SELECT,
+                                  UDMA_SIZE_8 | UDMA_SRC_INC_8 | UDMA_DST_INC_NONE | UDMA_ARB_1024);
+        MAP_DMA_setChannelTransfer(UDMA_PRI_SELECT,
+                                   UDMA_MODE_AUTO,
+                                   data_array,
+                                   (void*) (&CRC32->DI32),
+                                   size);
+
+        uint32_t dma_t0 = getTimerValue();
+
+        /* Enabling DMA Channel 0 */
+        MAP_DMA_enableChannel(0);
+
+        dma_done = 0;
+
+        MAP_CRC32_setSeed(CRC32_SEED, CRC32_MODE);
+
+        /* Forcing a software transfer on DMA Channel 0 */
+        MAP_DMA_requestSoftwareTransfer(0);
+
+        while(dma_done != 1);
+
+        crcSignature = MAP_CRC32_getResult(CRC32_MODE);
+
+        uint32_t dma_t1 = getTimerValue();
+        uint32_t dma_elapsedTime = computeElapsedTimeInMicroseconds(dma_t0, dma_t1);
+
+        printf("DMA_CRC = %08x\n", crcSignature);
+
+        // END DMA
+
+        printf("\nHardware CRC Elapsed Time: %u us\n", hw_elapsedTime);
+        printf("DMA CRC Elapsed Time: %u us\n", dma_elapsedTime);
+
+        float dmaSpeedup = (float)hw_elapsedTime/(float)dma_elapsedTime;
+        printf("\nSpeedup: %f times faster\n", dmaSpeedup);
+        printf("\n--------------------------------------\n");
     }
 }
 
@@ -132,6 +196,5 @@ int main(void)
 void DMA_INT1_IRQHandler(void)
 {
     MAP_DMA_disableChannel(0);
-    crcSignature = MAP_CRC32_getResult(CRC32_MODE);
-    printf("DMA_CRC = %08x\n", crcSignature);
+    dma_done = 1;
 }

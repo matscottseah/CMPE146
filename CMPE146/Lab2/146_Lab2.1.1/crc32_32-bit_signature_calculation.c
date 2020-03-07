@@ -147,10 +147,11 @@ int main(void)
 
     MAP_CRC32_setSeed(CRC32_INIT, CRC32_MODE);
 
+    uint32_t hwChecksum_t0 = getTimerValue();
+
     for (ii = 0; ii < lengthOfMyData; ii++)
         MAP_CRC32_set8BitData(myData[ii], CRC32_MODE);
 
-    uint32_t hwChecksum_t0 = getTimerValue();
 
     /* Getting the result from the hardware module */
     hwCalculatedCRC = MAP_CRC32_getResultReversed(CRC32_MODE) ^ 0xFFFFFFFF;
@@ -173,8 +174,8 @@ int main(void)
     //  Exercise 1.3  ------------------------------------------------------------
     uint32_t swChecksumElapsedTime = computeElapsedTimeInMicroseconds(swChecksum_t0, swChecksum_t1);
     printf("\nSoftware Checksum: %u\nElapsed Time: %u us\n", swCalculatedCRC, swChecksumElapsedTime);
-    uint32_t speedup = swChecksumElapsedTime - hwChecksumElapsedTime;
-    printf("\nSpeedup: %u us\n", speedup);
+    uint32_t speedup = swChecksumElapsedTime/hwChecksumElapsedTime;
+    printf("\nSpeedup: %u times faster\n", speedup);
 
     //  Exercise 1.4  ------------------------------------------------------------
     myData[20] = myData[20] ^ 1;
@@ -209,10 +210,10 @@ int main(void)
     myData[21] = myData[21] ^ 1;
     printf("\nReverse myData[21]:");
 
+    hwChecksum_t0 = getTimerValue();
+
     for (ii = 0; ii < lengthOfMyData; ii++)
             MAP_CRC32_set8BitData(myData[ii], CRC32_MODE);
-
-    hwChecksum_t0 = getTimerValue();
 
     /* Getting the result from the hardware module */
     hwCalculatedCRC = MAP_CRC32_getResultReversed(CRC32_MODE) ^ 0xFFFFFFFF;
