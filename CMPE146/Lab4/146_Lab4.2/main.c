@@ -29,68 +29,62 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * --/COPYRIGHT--*/
-/*******************************************************************************
- * MSP432 GPIO - Toggle Output High/Low
+/******************************************************************************
+ * MSP432 Empty Project
  *
- * Description: In this very simple example, the LED on P1.0 is configured as
- * an output using DriverLib's GPIO APIs. An infinite loop is then started
- * which will continuously toggle the GPIO and effectively blink the LED.
+ * Description: An empty project that uses DriverLib
  *
  *                MSP432P401
  *             ------------------
  *         /|\|                  |
  *          | |                  |
- *          --|RST         P1.0  |---> P1.0 LED
+ *          --|RST               |
  *            |                  |
  *            |                  |
  *            |                  |
  *            |                  |
- *
- ******************************************************************************/
+ *            |                  |
+ * Author: 
+*******************************************************************************/
 /* DriverLib Includes */
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
 
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
-//![Simple GPIO Config]
-int main(void)
-{
-//    volatile uint32_t ii;
-//
-//    /* Halting the Watchdog */
-//    MAP_WDT_A_holdTimer();
-//
-//    /* Configuring P1.0 as output */
-//    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN2);
-//
-//    while (1)
-//    {
-//        /* Delay Loop */
-//        for(ii=0;ii<500000;ii++)
-//        {
-//        }
-//
-//        MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN2);
-//    }
-    volatile int i;
+void delay_ms(uint32_t count) {
+    float clockFrequency = MAP_CS_getMCLK();
+    uint32_t multiplier = clockFrequency / 10000;
+    uint32_t milliseconds = count * 300;
 
-    // stop watchdog timer
-    WDTCTL = WDTPW | WDTHOLD;
-    // set up bit 0 of P1 as output
-    P1DIR = 0x01;
-    // intialize bit 0 of P1 to 0
-    P1OUT = 0x00;
+    volatile uint32_t ii;
 
-    // loop forever
-    for (;;) {
-      // toggle bit 0 of P1
-      P1OUT ^= 0x01;
-      // delay for a while
-      for (i = 0; i < 0x6000; i++);
+    /* Delay Loop */
+    for(ii=0;ii<milliseconds;ii++)
+    {
     }
 }
-//![Simple GPIO Config]
 
+int main(void)
+{
+    /* Stop Watchdog  */
+    MAP_WDT_A_holdTimer();
 
+    CAPTIO0CTL |= (1 << 8);    // Enable CAPTIO
+    CAPTIO0CTL |= 0b0100 << 4; // Choose Port 4
+    CAPTIO0CTL |= 0b0001 << 1; // Choose Pin 1
+
+    bool state;
+
+    uint32_t delayInMilliseconds = 10;
+
+    while(1)
+    {
+        delay_ms(delayInMilliseconds);
+        state = CAPTIO0CTL & 0x200;
+        printf("%u", state);
+        fflush(stdout);
+    }
+}

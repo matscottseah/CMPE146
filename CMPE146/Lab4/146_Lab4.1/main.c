@@ -29,68 +29,92 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * --/COPYRIGHT--*/
-/*******************************************************************************
- * MSP432 GPIO - Toggle Output High/Low
+/******************************************************************************
+ * MSP432 Empty Project
  *
- * Description: In this very simple example, the LED on P1.0 is configured as
- * an output using DriverLib's GPIO APIs. An infinite loop is then started
- * which will continuously toggle the GPIO and effectively blink the LED.
+ * Description: An empty project that uses DriverLib
  *
  *                MSP432P401
  *             ------------------
  *         /|\|                  |
  *          | |                  |
- *          --|RST         P1.0  |---> P1.0 LED
+ *          --|RST               |
  *            |                  |
  *            |                  |
  *            |                  |
  *            |                  |
- *
- ******************************************************************************/
+ *            |                  |
+ * Author: 
+*******************************************************************************/
 /* DriverLib Includes */
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
 
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
-//![Simple GPIO Config]
-int main(void)
-{
-//    volatile uint32_t ii;
-//
-//    /* Halting the Watchdog */
-//    MAP_WDT_A_holdTimer();
-//
-//    /* Configuring P1.0 as output */
-//    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN2);
-//
-//    while (1)
-//    {
-//        /* Delay Loop */
-//        for(ii=0;ii<500000;ii++)
-//        {
-//        }
-//
-//        MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN2);
-//    }
-    volatile int i;
+void delay_ms(uint32_t count) {
+    float clockFrequency = MAP_CS_getMCLK();
+    uint32_t multiplier = clockFrequency / 10000;
+    uint32_t milliseconds = count * 300;
 
-    // stop watchdog timer
-    WDTCTL = WDTPW | WDTHOLD;
-    // set up bit 0 of P1 as output
-    P1DIR = 0x01;
-    // intialize bit 0 of P1 to 0
-    P1OUT = 0x00;
+    volatile uint32_t ii;
 
-    // loop forever
-    for (;;) {
-      // toggle bit 0 of P1
-      P1OUT ^= 0x01;
-      // delay for a while
-      for (i = 0; i < 0x6000; i++);
+    /* Delay Loop */
+    for(ii=0;ii<milliseconds;ii++)
+    {
     }
 }
-//![Simple GPIO Config]
+
+uint32_t computeElapsedTimeInMilliseconds(const uint32_t t0, const uint32_t t1) {
+    float clockFrequency = MAP_CS_getMCLK();
+    float elapsedTime = t0 - t1;
+    float elapsedTimeInMilliseconds = (elapsedTime/clockFrequency) * 1000;
+
+    return elapsedTimeInMilliseconds;
+}
 
 
+int main(void)
+{
+    /* Stop Watchdog  */
+    MAP_WDT_A_holdTimer();
+
+    /* Initialize Timer */
+    MAP_Timer32_initModule(TIMER32_0_BASE,
+                           TIMER32_PRESCALER_1,
+                           TIMER32_32BIT,
+                           TIMER32_FREE_RUN_MODE);
+    MAP_Timer32_startTimer(TIMER32_0_BASE, 0);
+
+    /* Configuring P1.0 as output */
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN0|GPIO_PIN1);
+
+    uint32_t delayInMilliseconds = 2000;
+
+    uint32_t t0;
+    uint32_t t1;
+    uint32_t t2;
+
+    while(1)
+    {
+        t0 = MAP_Timer32_getValue(TIMER32_0_BASE);
+
+        MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN0);
+        delay_ms(delayInMilliseconds);
+
+        t1 = MAP_Timer32_getValue(TIMER32_0_BASE);
+
+        MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN1);
+        delay_ms(delayInMilliseconds);
+
+        t2 = MAP_Timer32_getValue(TIMER32_0_BASE);
+
+        uint32_t RED_time = computeElapsedTimeInMilliseconds(t0, t1);
+        uint32_t GREEN_time = computeElapsedTimeInMilliseconds(t1, t2);
+
+        printf("Time for red LED: %u ms\n", RED_time);
+        printf("Time for green LED: %u ms\n", GREEN_time);
+    }
+}

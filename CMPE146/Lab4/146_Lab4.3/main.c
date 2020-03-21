@@ -29,68 +29,73 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * --/COPYRIGHT--*/
-/*******************************************************************************
- * MSP432 GPIO - Toggle Output High/Low
+/******************************************************************************
+ * MSP432 Empty Project
  *
- * Description: In this very simple example, the LED on P1.0 is configured as
- * an output using DriverLib's GPIO APIs. An infinite loop is then started
- * which will continuously toggle the GPIO and effectively blink the LED.
+ * Description: An empty project that uses DriverLib
  *
  *                MSP432P401
  *             ------------------
  *         /|\|                  |
  *          | |                  |
- *          --|RST         P1.0  |---> P1.0 LED
+ *          --|RST               |
  *            |                  |
  *            |                  |
  *            |                  |
  *            |                  |
- *
- ******************************************************************************/
+ *            |                  |
+ * Author: 
+*******************************************************************************/
 /* DriverLib Includes */
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
 
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
-//![Simple GPIO Config]
-int main(void)
-{
-//    volatile uint32_t ii;
-//
-//    /* Halting the Watchdog */
-//    MAP_WDT_A_holdTimer();
-//
-//    /* Configuring P1.0 as output */
-//    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN2);
-//
-//    while (1)
-//    {
-//        /* Delay Loop */
-//        for(ii=0;ii<500000;ii++)
-//        {
-//        }
-//
-//        MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P2, GPIO_PIN2);
-//    }
-    volatile int i;
+void delay_ms(uint32_t count) {
+    float clockFrequency = MAP_CS_getMCLK();
+    uint32_t multiplier = clockFrequency / 10000;
+    uint32_t milliseconds = count * 300;
 
-    // stop watchdog timer
-    WDTCTL = WDTPW | WDTHOLD;
-    // set up bit 0 of P1 as output
-    P1DIR = 0x01;
-    // intialize bit 0 of P1 to 0
-    P1OUT = 0x00;
+    volatile uint32_t ii;
 
-    // loop forever
-    for (;;) {
-      // toggle bit 0 of P1
-      P1OUT ^= 0x01;
-      // delay for a while
-      for (i = 0; i < 0x6000; i++);
+    /* Delay Loop */
+    for(ii=0;ii<milliseconds;ii++)
+    {
     }
 }
-//![Simple GPIO Config]
 
+int main(void)
+{
+    /*  Stop Watchdog  */
+    MAP_WDT_A_holdTimer();
 
+    /*  Enable Capacitive Touch on 4.1  */
+    CAPTIO0CTL |= (1 << 8);    // Enable CAPTIO
+    CAPTIO0CTL |= 0b0100 << 4; // Choose Port 4
+    CAPTIO0CTL |= 0b0001 << 1; // Choose Pin 1
+
+    /*  Setup Timer_A  */
+    Timer_A_ContinuousModeConfig timer_continuous_obj;
+    timer_continuous_obj.clockSource = TIMER_A_CLOCKSOURCE_INVERTED_EXTERNAL_TXCLK;
+    timer_continuous_obj.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1;
+    timer_continuous_obj.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
+    timer_continuous_obj.timerClear = TIMER_A_DO_CLEAR;
+    MAP_Timer_A_configureContinuousMode(TIMER_A2_BASE, &timer_continuous_obj);
+    MAP_Timer_A_startCounter(TIMER_A2_BASE, TIMER_A_CONTINUOUS_MODE);
+
+    uint32_t delayinMilliseconds = 500;
+
+    while(1)
+    {
+        MAP_Timer_A_clearTimer(TIMER_A2_BASE);
+
+        delay_ms(delayinMilliseconds);
+
+        uint32_t counterRegister = MAP_Timer_A_getCounterValue(TIMER_A2_BASE);
+
+        printf("Register Value: %u\n", counterRegister);
+    }
+}
